@@ -1,55 +1,6 @@
 import streamlit as st
-import math
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy.stats import norm
-
-class BlackScholes:
-    def __init__(self, S, K, T, r, vol, option_type):
-        self.S = S
-        self.K = K
-        self.T = T
-        self.r = r
-        self.vol = vol
-        self.option_type = option_type
-
-    def calculate_price(self):
-        d1 = (math.log(self.S/self.K) + (self.r + 0.5 * self.vol**2)*T) / (self.vol * math.sqrt(self.T))
-        d2 = d1 - (self.vol * math.sqrt(self.T))
-
-        if self.option_type == 'call':
-            price = self.S * norm.cdf(d1) - self.K * math.exp(-self.r * self.T) * norm.cdf(d2)
-        if self.option_type == 'put':
-            price = self.K * math.exp(-self.r * self.T) * norm.cdf(-d2) - self.S * norm.cdf(-d1)
-        return price
-    
-    def generate_plot(self, S_min, S_max, vol_min, vol_max, purchase_price):
-        S_range=np.linspace(S_min, S_max, 10) # range of spot prices
-        vol_range=np.linspace(vol_min, vol_max, 10) # range of volatilities
-
-        pnl = np.zeros((len(vol_range), len(S_range)))
-
-        # calculate pnl for each combination of spot and vol
-        for i, self.vol in enumerate(vol_range):
-            for j, self.S in enumerate(S_range):
-                option_price=BlackScholes.calculate_price(self)
-                pnl[i, j] = option_price - purchase_price
-
-        # plotting pnl heatmap
-        plt.figure(figsize=(8, 8))
-        sns.heatmap(pnl, xticklabels=np.round(S_range, 2), yticklabels=np.round(vol_range, 2), 
-                    annot=True,
-                    fmt=".2f",
-                    cmap="RdYlGn",
-                    cbar=False,
-                    center=0,
-                    cbar_kws={'label': 'PnL'})
-        plt.xlabel('Spot Price (S)')
-        plt.ylabel('Volatility (vol)')
-        plt.title(f'PnL Heat Map for {self.option_type.capitalize()} Option')
-        return plt
-
+import yfinance as yf
+from blackscholes import BlackScholes
 
 # configuring default settings of the page
 st.set_page_config(
@@ -57,25 +8,49 @@ st.set_page_config(
     page_icon='📈', 
     layout="wide", 
     initial_sidebar_state="auto", 
-    menu_items=None
+    menu_items=None,
 )
 
+# session state
+if 'disabled' not in st.session_state:
+    st.session_state.disabled = False
+
+# giving the page a title
 st.title("📈 Black-Scholes :grey[Model]")
 
+# Intializing two columns with a 2 to 8 size ratio
 col1, col2= st.columns([2, 8])
 
 with col1:
     st.header("🔢 Inputs")
+
+    # inputs
     S = st.number_input("Price of the underlying", min_value=0.01, value=100.00)
     K = st.number_input("Strike Price", min_value=0.01, value=100.00)
     T = st.number_input("Time to expiry (Years)", min_value=0.01, value=2.00)
-    r = st.number_input("Risk-free rate", min_value=0.01, value=0.05)
     vol = st.number_input("Volatility", min_value=0.01, value=0.05)
+    r = st.number_input("Risk-free rate", 
+                        min_value=0.01, 
+                        value=0.05,
+                        disabled=st.session_state.disabled,
+                        )
+
+    # toggle button to use us treasury yields
+    on = st.toggle("Realistic Risk-free rate", 
+                   key="disabled",
+                   help="realistic risk-free rate uses US 3 month yields")
+
+    if on:
+        treasury_bill = yf.Ticker("^IRX")
+        data = treasury_bill.history()
+        last_quote = data['Close'].iloc[-1]
+        r = last_quote / 100
 
     st.divider()
 
     st.header("🔥 Heatmap inputs")
 
+    # inputs
     purchase_price = st.number_input("Purchase Price", min_value=0.00, value=100.00)    
     S_min = st.number_input("Minimum price of they underlying", min_value=0.00, value=50.00)
     S_max = st.number_input("Maximum price of they underlying", min_value=0.00, value=150.00)
@@ -84,7 +59,6 @@ with col1:
                         min_value=0.01, max_value=1.00, step=0.01)
     vol_max = st.slider("Maximum volatility",
                         min_value=0.01, max_value=1.00, step=0.01)
-
 
 with col2:
     # make instances of our BlackScholes class
@@ -143,7 +117,7 @@ with col2:
     st.divider()
 
     st.header("💵 PnL HeatMap")
-    st.write("The values in the heat map changed based off of user input")
+    st.write("\* The values in the heat map changed based off of user input")
 
     col21, col22 = st.columns(2)
     with col21:
