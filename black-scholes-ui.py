@@ -73,18 +73,25 @@ with col2:
     call_delta = call_price - purchase_price
     put_delta = put_price - purchase_price
 
-    st.header("🌌Black-Scholes Pricing Model")
-    st.write("\* the delta corresponds to the purchase price of the call/put")
+    st.header("🌌Black-Scholes Pricing Model",
+            help="the delta corresponds to the purchase price of the call/put")
 
     # Custom CSS for borders and conditional delta coloring
     st.markdown(f"""
         <style>
-        .metric-container {{
-            border: 2px solid #000;
+        .metric-container-call {{ 
             border-radius: 7px;
             padding: 10px;
             margin-bottom: 10px;
             text-align: center;
+            background-color: #9edb6b;
+        }}
+        .metric-container-put {{
+            border-radius: 7px;
+            padding: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+            background-color: #ed6666;
         }}
         .metric-label {{
             font-weight: bold;
@@ -102,12 +109,12 @@ with col2:
             color: red;
         }}
         </style>
-        <div class="metric-container">
+        <div class="metric-container-call">
             <div class="metric-label">CALL Value</div>
             <div class="metric-value">{call_price: .2f}</div>
             <div class="metric-delta {'delta-positive' if call_delta >= 0 else 'delta-negative'}">{call_delta: .2f}</div>
         </div>
-        <div class="metric-container">
+        <div class="metric-container-put">
             <div class="metric-label">PUT Value</div>
             <div class="metric-value">{put_price: .2f}</div>
             <div class="metric-delta {'delta-positive' if put_delta >= 0 else 'delta-negative'}">{put_delta: .2f}</div>
@@ -116,8 +123,8 @@ with col2:
 
     st.divider()
 
-    st.header("💵 PnL HeatMap")
-    st.write("\* The values in the heat map changed based off of user input")
+    st.header("💵 PnL HeatMap",
+              help="The values within the map correpsond the the ($) PnL per option excercised")
 
     col21, col22 = st.columns(2)
     with col21:
